@@ -201,10 +201,10 @@ class DataProcessor(object):
   @classmethod
   def _read_tsv(cls, input_file, quotechar=None):
     """Reads a tab separated value file."""
-    with tf.gfile.Open(input_file, "r") as f:
+    with tf.io.gfile.GFile(input_file, "r") as f:
       reader = csv.reader(f, delimiter="\t", quotechar=quotechar)
       lines = []
-      for line in reader: 
+      for line in reader:
         lines.append(line)
       return lines
 
@@ -219,7 +219,7 @@ class AsmProcessor(DataProcessor):
       tsv_writer = csv.writer(out_file, delimiter='\t')
       for k in range(int(len(data))):
             tsv_writer.writerow(data[k])
-            
+
     # Validation set
     with open(os.path.join(data_dir,'dev.tsv'), 'wt') as out_file:
       tsv_writer = csv.writer(out_file, delimiter='\t')
@@ -230,7 +230,7 @@ class AsmProcessor(DataProcessor):
       tsv_writer = csv.writer(out_file, delimiter='\t')
       for k in range(int(len(data)*0.10)):
             tsv_writer.writerow(data[int(len(data)*0.90)+k])
-    
+
   def get_train_examples(self, data_dir):
     """See base class."""
     return self._create_examples(
@@ -379,11 +379,11 @@ def file_based_convert_examples_to_features(
     examples, label_list, max_seq_length, tokenizer, output_file):
   """Convert a set of `InputExample`s to a TFRecord file."""
 
-  writer = tf.python_io.TFRecordWriter(output_file)
+  writer = tf.io.TFRecordWriter(output_file)
 
   for (ex_index, example) in enumerate(examples):
     if ex_index % 10000 == 0:
-      tf.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
+      tf.compat.v1.logging.info("Writing example %d of %d" % (ex_index, len(examples)))
 
     feature = convert_single_example(ex_index, example, label_list,
                                      max_seq_length, tokenizer)
@@ -680,7 +680,7 @@ def convert_examples_to_features(examples, label_list, max_seq_length,
 
 
 def main(_):
-  tf.logging.set_verbosity(tf.logging.INFO)
+  tf.compat.v1.logging.set_verbosity(tf.compat.v1.logging.INFO)
 
   processors = {
       "assembly": AsmProcessor,
@@ -701,7 +701,7 @@ def main(_):
         "was only trained up to sequence length %d" %
         (FLAGS.max_seq_length, bert_config.max_position_embeddings))
 
-  tf.gfile.MakeDirs(FLAGS.output_dir)
+  tf.io.gfile.makedirs(FLAGS.output_dir)
 
   task_name = FLAGS.task_name.lower()
 
@@ -856,15 +856,15 @@ def main(_):
         seq_length=FLAGS.max_seq_length,
         is_training=False,
         drop_remainder=predict_drop_remainder)
-    result = estimator.predict(input_fn=predict_input_fn)  
-    
+    result = estimator.predict(input_fn=predict_input_fn)
+
     output_predict_file = os.path.join(FLAGS.output_dir, "test_results.tsv")
     with tf.gfile.GFile(output_predict_file, "w") as writer:
       num_written_lines = 0
       tf.logging.info("***** Predict results *****")
-      
+
       for (i, prediction) in enumerate(result):
-       
+
         probabilities = prediction["probabilities"]
         if i >= num_actual_predict_examples:
           break
@@ -875,7 +875,7 @@ def main(_):
         num_written_lines += 1
 
     assert num_written_lines == num_actual_predict_examples
-    
+
 
 if __name__ == "__main__":
   flags.mark_flag_as_required("data_dir")
@@ -883,4 +883,4 @@ if __name__ == "__main__":
   flags.mark_flag_as_required("vocab_file")
   flags.mark_flag_as_required("bert_config_file")
   flags.mark_flag_as_required("output_dir")
-  tf.app.run()
+  tf.compat.v1.app.run()
